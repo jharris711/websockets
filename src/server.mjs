@@ -9,6 +9,7 @@ const SEVEN_BITS_INTEGER_MARKER = 125;
 const SIXTEEN_BITS_INTEGER_MARKER = 126;
 const SIXTYFOUR_BITS_INTEGER_MARKER = 127;
 const MASK_KEY_BYTES_LENGTH = 4;
+const OPCODE_TEXT = 0x01; // 1 bit in binary
 const FIRST_BIT = 128; // parseInt('10000000', 2) -> 128
 
 // Create an HTTP server
@@ -36,6 +37,44 @@ function onSocketUpgrade(req, socket) {
   const headers = prepareHandshakeHeaders(webClientSocketKey);
   socket.write(headers);
   socket.on('readable', () => onSocketReadable(socket));
+}
+
+function sendMessage(msg, socket) {
+  const data = prepareMessage(msg);
+  socket.write(data);
+}
+
+function prepareMessage(message) {
+  const msg = Buffer.from(message);
+  const messageSize = msg.length;
+
+  let dataFrameBuffer;
+
+  // 0x80 === 128 in binary
+  // '0x' + Math.abs(128).toString(16) == 0x80
+  const firstByte = 0x80 | OPCODE_TEXT; // single frame + text
+
+  if (messageSize <= SEVEN_BITS_INTEGER_MARKER) {
+    const bytes = [firstByte];
+    dataFrameBuffer = Buffer.from(bytes.concat(messageSize));
+  } else {
+    throw new Error('Message too long. Length not supported');
+  }
+
+  const totalLength = dataFrameBuffer.byteLength + messageSize;
+  const dataFrameResponse = concat([dataFrameBuffer, msg], totalLength);
+  return dataFrameResponse;
+}
+
+function concat(bufferList, totalLength) {
+  const target = Buffer.allocUnsafe(totalLength);
+  let offset = 0;
+  for (const buffer of bufferList) {
+    target.set(buffer, offset);
+    offset += buffer.length;
+  }
+
+  return target;
 }
 
 /**
@@ -71,6 +110,13 @@ function onSocketReadable(socket) {
 
   const data = JSON.parse(received);
   console.log('Message Received:', data);
+
+  const msg = JSON.stringify({
+    message: data,
+    at: new Date.toISOString(),
+  });
+
+  sendMessage(msg, socket);
 }
 
 function unmask(encodedBuffer, maskKey) {

@@ -6,6 +6,7 @@
     <title>Web Socket Client | Josh Harris</title>
   </head>
   <body>
+    <h1>Messages:</h1>
     <output id="messages"></output>
     <script>
       const messages = document.getElementById('messages');
@@ -26,7 +27,11 @@
 
         socket.send(data);
       };
-      socket.onmessage = (msg) => console.log(`New Message: ${msg}`);
+      socket.onmessage = (msg) => {
+        const message = msg.data;
+        console.log(`New Message:`, message);
+        messages.innerHTML += `<p>${message}</p>`;
+      };
       socket.onerror = (error) =>
         console.log(`WebSocket error: ${JSON.stringify(error)}`);
       socket.onclose = (event) =>
