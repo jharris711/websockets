@@ -23,8 +23,8 @@ server.on('upgrade', onSocketUpgrade);
 
 /**
  * Function to handle WebSocket upgrade
- * @param {*} req
- * @param {*} socket
+ * @param {net.Request} req
+ * @param {net.Socket} socket - The WebSocket socket to handle.
  */
 function onSocketUpgrade(req, socket) {
   // Extract the WebSocket key from the request headers
@@ -38,6 +38,12 @@ function onSocketUpgrade(req, socket) {
   socket.on('readable', () => onSocketReadable(socket));
 }
 
+/**
+ * Handles the 'readable' event on a WebSocket socket.
+ * Reads and processes incoming WebSocket messages.
+ * @param {net.Socket} socket - The WebSocket socket to handle.
+ * @throws {Error} Throws an error if the message length is not supported.
+ */
 function onSocketReadable(socket) {
   // consume optcode (first byte)
   // 1 -> 1 byte -> 8 bits
