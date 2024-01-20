@@ -15,17 +15,43 @@
         console.log(`WebSocket is connected`);
         const id = Math.round(Math.random() * 100);
         console.log(`Sending ${id}`);
-        const data = JSON.stringify({
-          id,
-          name: `[${id}] Josh Harris`,
-          address: {
-            street: '123 Fake St',
-            city: 'Springfield',
-          },
-          profession: 'developer',
-        });
+        const intervalId = setInterval(() => {
+          const data = JSON.stringify([
+            {
+              id,
+              name: `[${id}] Josh Harris`,
+              address: {
+                street: 'my St',
+                number: 20 * id,
+              },
+              profession: 'developer',
+            },
+            {
+              id,
+              name: `[${id}] Mary Contari`,
+              address: {
+                street: 'my St',
+                number: 20 * id,
+              },
+              profession: 'developer',
+            },
+            {
+              id,
+              name: `[${id}] Josh Harris`,
+              address: {
+                street: 'my St',
+                number: 20 * id,
+              },
+              profession: 'developer',
+            },
+          ]);
 
-        socket.send(data);
+          socket.send(data);
+        }, 1000);
+
+        setTimeout(() => {
+          clearInterval(intervalId);
+        }, 5000);
       };
       socket.onmessage = (msg) => {
         const message = msg.data;
