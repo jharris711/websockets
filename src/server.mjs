@@ -5,6 +5,11 @@ import crypto from 'crypto';
 // Constants
 const PORT = 1337;
 const WEBSOCKET_MAGIC_STRING = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+const SEVEN_BITS_INTEGER_MARKER = 125;
+const SIXTEEN_BITS_INTEGER_MARKER = 126;
+const SIXTYFOUR_BITS_INTEGER_MARKER = 127;
+const MASK_KEY_BYTES_LENGTH = 4;
+const FIRST_BIT = 128; // parseInt('10000000', 2) -> 128
 
 // Create an HTTP server
 const server = createServer((req, res) => {
@@ -25,9 +30,37 @@ function onSocketUpgrade(req, socket) {
   // Extract the WebSocket key from the request headers
   const { 'sec-websocket-key': webClientSocketKey } = req.headers;
 
+  console.log(`${webClientSocketKey} connected!`);
+
   // Prepare and send the WebSocket handshake headers
   const headers = prepareHandshakeHeaders(webClientSocketKey);
   socket.write(headers);
+  socket.on('readable', () => onSocketReadable(socket));
+}
+
+function onSocketReadable(socket) {
+  // consume optcode (first byte)
+  // 1 -> 1 byte -> 8 bits
+  socket.read(1);
+
+  const [markerAndPayloadLength] = socket.read(1);
+
+  // Because the first bit is always 1 for client-to-server messages,
+  // we can subtract one bit (128 or '10000000' in binary) from this byte
+  // to get rid of the MASK bit and get the actual payload length
+  const lengthIndicatorInBits = markerAndPayloadLength - FIRST_BIT;
+
+  let messageLength = 0;
+
+  if (lengthIndicatorInBits <= SEVEN_BITS_INTEGER_MARKER) {
+    messageLength = lengthIndicatorInBits;
+  } else {
+    throw new Error('Your message is too long. Message length not supported');
+  }
+
+  const maskKey = socket.read(MASK_KEY_BYTES_LENGTH);
+  const encoded = socket.read(messageLength);
+  console.log();
 }
 
 /**
