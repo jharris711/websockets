@@ -13,7 +13,6 @@ The server (`server.mjs`) creates an HTTP server that responds to regular HTTP r
 To start the server, run:
 
 ```bash
-Copy code
 npm install
 npm run start
 ```
