@@ -2,9 +2,9 @@
   "name": "websockets",
   "version": "1.0.0",
   "description": "",
-  "main": "server.mjs",
+  "main": "src/server.mjs",
   "scripts": {
-    "start": "nodemon server.mjs",
+    "start": "nodemon src/server.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
