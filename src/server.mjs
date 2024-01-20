@@ -76,8 +76,63 @@ function onSocketReadable(socket) {
 function unmask(encodedBuffer, maskKey) {
   const finalBuffer = Buffer.from(encodedBuffer);
 
+  // Because the mask key has only 4 bytes,
+  // index % 4 === 0, 1, 2, 3 = index bits needed to decode the message
+  // Explanation: In WebSocket communication, the
+  // payload of a message is XORed (exclusive OR)
+  // with a mask key to secure the data. The mask key
+  // is a 4-byte value, and each byte of the payload
+  // is XORed with a corresponding byte of the mask key.
+  // The above comment is indicating that when decoding the
+  // message, you need to consider the index of the byte
+  // in the payload modulo 4, as each byte is XORed with
+  // the corresponding byte of the 4-byte mask key.
+
+  // XOR ^
+  // returns 1 if both bits are different
+  // returns 0 if both bits are equal
+  // Explanation: The XOR (^) operator is used in
+  // bitwise operations. It returns 1 if the corresponding
+  // bits of the two operands are different and 0 if they
+  // are the same.
+
+  // (71).toString(2).padStart(8, "0") -> '01000111'
+  // (53).toString(2).padStart(8, "0") -> '00110101'
+  //                                      '01110010'
+  // Explanation: This shows the binary representation
+  // of the decimal numbers 71 and 53. The `.toString(2)`
+  // method converts the numbers to binary, and
+  // `.padStart(8, "0")` ensures that the binary representation
+  // has 8 bits, left-padding with zeros if needed. The result
+  // is the binary representation of each byte of the mask key.
+
+  // (71 ^ 53).toString(2).padStart(8, "0") -> '01110010'
+  // Explanation: This line demonstrates the XOR operation
+  // between the binary representations of the two numbers
+  // (71 and 53). The result is the binary representation of
+  // the XORed value.
+
+  // String.fromCharCode(parseInt('01110010', 2)) -> 'r'
+  // Explanation: Finally, this line converts the binary
+  // representation ('01110010') back to a decimal number
+  // using `parseInt` with base 2. Then, `String.fromCharCode`
+  // converts the decimal number to the corresponding ASCII
+  // character. In this example, it results in the character 'r'.
+
+  const fillWithEightZeros = (t) => t.padStart(8, '0');
+  const toBinary = (t) => fillWithEightZeros(t.toString(2));
+  const fromBinaryToDecimal = (t) => parseInt(toBinary(t), 2);
+  const getCharFromBinary = (t) => String.fromCharCode(fromBinaryToDecimal(t));
+
   for (let i = 0; i < encodedBuffer.length; i++) {
-    finalBuffer[i] = encodedBuffer[i] ^ maskKey[i % 4];
+    finalBuffer[i] = encodedBuffer[i] ^ maskKey[i % MASK_KEY_BYTES_LENGTH];
+    const logger = {
+      unmaskingCalc: `${toBinary(encodedBuffer[i])} ^ ${toBinary(
+        maskKey[i % MASK_KEY_BYTES_LENGTH]
+      )} = ${toBinary(finalBuffer[i])}`,
+      decoded: getCharFromBinary(finalBuffer[i]),
+    };
+    console.log(logger);
   }
 
   return finalBuffer;
